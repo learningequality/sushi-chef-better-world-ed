@@ -1,12 +1,12 @@
 # Better World Ed Chef
 
 Kolibri is an open source educational platform to distribute content to areas with
-little to no connectivity. This content is created on [Kolibri Studio](https://studio.learningequality.org), a platform 
-for creating and organizing content to be exported to Kolibri. The purpose of this 
-project is to create a *chef*, or a program that scrapes a content source and puts 
+little to no connectivity. This content is created on [Kolibri Studio](https://studio.learningequality.org), a platform
+for creating and organizing content to be exported to Kolibri. The purpose of this
+project is to create a *chef*, or a program that scrapes a content source and puts
 it into a format that can be imported into Kolibri Studio. This project will
-read a given source's content and parse and organize that content into a folder + 
-csv structure, which will then be imported into Kolibri Studio. (example can be 
+read a given source's content and parse and organize that content into a folder +
+csv structure, which will then be imported into Kolibri Studio. (example can be
 found under `examples` directory.
 
 
@@ -17,6 +17,25 @@ found under `examples` directory.
 * [Install pip](https://pypi.python.org/pypi/pip) if you don't have it already.
 
 * Run `pip install -r requirements.txt`
+
+
+
+
+## Source Data Import
+
+Use the script `utils/gsheet2localcsv.py` to regenerate the file `bwe_overall_database.csv`
+with the latest data from the BWE sheet. To run this script, you'll need the credentials
+file `credentials/client_secret.json` (ask Ivan).
+
+1. Edit the values of `BWE_SHEET_NAME` and `BWE_RANDE` in `utils/gsheet2localcsv.py`
+   to reflect the current state (which sheet is source data on? / how many rows are there?)
+
+2. Run the script
+
+      python utils/gsheet2localcsv.py
+
+
+
 
 ## Description
 A sous chef is responsible for scraping content from a source and putting it into a folder
@@ -248,6 +267,7 @@ _Please make sure your final chef matches the following standards._
 1. Is the code compatible with Python 3?
 1. Does the code use common standard library functions where needed?
 1. Does the code use common python idioms where needed (with/open, try/except, etc.)?
+
 
 
 
