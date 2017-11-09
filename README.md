@@ -1,12 +1,12 @@
 # Better World Ed Chef
 
 Kolibri is an open source educational platform to distribute content to areas with
-little to no connectivity. This content is created on [Kolibri Studio](https://studio.learningequality.org), a platform 
-for creating and organizing content to be exported to Kolibri. The purpose of this 
-project is to create a *chef*, or a program that scrapes a content source and puts 
+little to no connectivity. This content is created on [Kolibri Studio](https://studio.learningequality.org), a platform
+for creating and organizing content to be exported to Kolibri. The purpose of this
+project is to create a *chef*, or a program that scrapes a content source and puts
 it into a format that can be imported into Kolibri Studio. This project will
-read a given source's content and parse and organize that content into a folder + 
-csv structure, which will then be imported into Kolibri Studio. (example can be 
+read a given source's content and parse and organize that content into a folder +
+csv structure, which will then be imported into Kolibri Studio. (example can be
 found under `examples` directory.
 
 
@@ -250,4 +250,10 @@ _Please make sure your final chef matches the following standards._
 1. Does the code use common python idioms where needed (with/open, try/except, etc.)?
 
 
+# Daniel's notes
 
+For Mac users
+1. Do not install requirements using 'pip', use 'pip3' instead.
+  ex: 'pip3 install -r requirements.txt', because of the default version of python on OS X
+2. Use 'python3' when developing on OS X to run souschef.py
+  ex: 'python3 souschef.py', for some reason on my machine it won't work with 'python souschef.py'

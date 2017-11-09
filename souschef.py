@@ -8,7 +8,10 @@ from le_utils.constants import licenses, exercises, content_kinds, file_formats,
 
 """ Additional imports """
 ###########################################################
-
+import logging
+import csv
+import re		# Read hyperlinks and titles from csv file, hacky solution
+import string 	# To work around forward slashes in titles, see additional notes (1)
 
 """ Run Constants"""
 ###########################################################
@@ -25,7 +28,16 @@ WRITE_TO_PATH = "{}{}{}.zip".format(os.path.dirname(os.path.realpath(__file__)),
 
 """ Additional Constants """
 ###########################################################
+BASE_URL = 'https://www.betterworlded.org/try'
 
+# Read csv file
+
+# csv file name
+filename = "bwe_overall_database.csv"
+
+# initializing titles and rows list
+fields = []
+rows = []
 
 """ Main Scraping Method """
 ###########################################################
@@ -33,14 +45,127 @@ def scrape_source(writer):
 	""" scrape_source: Scrapes channel page and writes to a DataWriter
         Args: writer (DataWriter): class that writes data to folder/spreadsheet structure
         Returns: None
+
+        Better World Ed is organized with the following hierarchy:
+            Grade Level (Folder) ***There may not be an assigned grade level*** (there should be 24 unassigned grade level rows)
+            |   Math Topic (Folder)  ***May come as a hyperlink***
+			|   |   Specific Objective (Folder) ***May come as a hyperlink***
+			|   |   |   Written Story (File)
+			|   |   |   Video (File)
+			|   |   |   Lesson Plan (File)
+
+
+		Additional notes:
+
+		1)
+		There are some cases where we would want to remove forward slashes (/), from the titles of files or folders.
+		This is because when trying to name a folder, the PATH variable and Datawriter will create a new folder, for example:
+		the 120th record, row 4, has the hyperlink, "I Am Shantanu // Chai & Community". This will cause the Datawriter to
+		add a folder, "I Am Shantanu", with a file inside named " Chai & Community", with a preceding whitespace, instead
+		of a file "I am Shantanu // Chai & Community".
+
+		2)
+		Take a look at record 294. Problems when trying to extract a pdf from google docs, vs google drive.
+
+        Args: writer (Datawriter): class that writes data to folder/csv structure
+		Returns: None
     """
 
-	# TODO: Replace line with scraping code
-	raise NotImplementedError("Scraping method not implemented")
+	# To get the grade levels, go through the csv file and insert all
+	# the grade levels into a set
+	gradeLevels = set()
+	count = 0 # Temporary, to verify correct output
 
+	with open(filename, 'r') as csvfile:
+		# Creating csv reader object
+		csvreader = csv.reader(csvfile)
+
+		# Extracting each data row one by one
+		for row in csvreader:
+			#print ("loop")
+			if count == 0: # Skip the headers
+				count += 1
+				continue
+			if count == 2: # Temporary, to ensure code works on the first 5 rows
+				break
+
+			# Some folders are named as hyperlinks
+			gradeLevel = row[0]
+			if gradeLevel == "":
+				gradeLevel = "Uncategorized"
+
+			mathTopic = row[1]
+			specificObjective = row[2]
+			try:
+				match = re.findall(r'\"(.+?)\"', row[1])
+				#print ("Match: " + match[1])
+				mathTopic = match[1].replace('/', '|')
+			except:
+				mathTopic = row[1].replace('/', '|')
+			try:
+				match = re.findall(r'\"(.+?)\"', row[2])
+				specificObjective = match[1].replace('/', '|')
+			except:
+				specificObjective = row[2].replace('/', '|')
+
+			PATH.set(gradeLevel, mathTopic, specificObjective)
+			print ("PATH: " + str(PATH))
+
+
+			writer.add_folder(str(PATH), specificObjective)
+
+			# TODO: Search for 'Coming soon', and insert a try/except to see if
+			#		the strings can be matched or not. If not, continue.
+
+			# Written story (3th column, zero indexed)
+			try:
+				matches = re.findall(r'\"(.+?)\"', row[3])
+				print ("Adding written story: " + matches[1])
+				#title = remove_forward_slashes(matches[1])
+				title = matches[1].replace('/', '|')
+				print ("Adding written story: " + matches[1])
+
+				#writer.add_file(str(PATH), title, matches[0], ext=".pdf", license=licenses.CC_BY, copyright_holder="betterworlded")
+				writer.add_file(str(PATH), "title", "https://docs.google.com/document/d/1s-5q5TfAj_OeiQjHzDL0a90q0NO_gEq9eZnF8TkeLdU/edit?usp=sharing", ext=".pdf", license=licenses.CC_BY, copyright_holder="betterworlded")
+			except Exception as e:
+				print ("Error in extracting link from: " + row[3], str(e))
+
+			# Video (4th column, zero indexed)
+			"""
+			try:
+				matches = re.findall(r'\"(.+?)\"', row[4])
+				#title = remove_forward_slashes(matches[1])
+				title = matches[1].replace('/', '|')
+				print ("Adding video: " + title)
+				print ("Video url: " + matches[0])
+				file_path = writer.add_file(str(PATH), str(matches[1]), matches[0], ext=".mp4", license=licenses.CC_BY, copyright_holder="betterworlded")
+
+			except:
+				print ("Error in extracting link from: " + row[4])
+			"""
+
+			# Lesson plan (5th column, zero indexed)
+			try:
+				matches = re.findall(r'\"(.+?)\"', row[5])
+				#title = remove_forward_slashes(matches[1])
+				title = matches[1].replace('/', '|')
+				print ("Adding lesson plan: " + matches[1])
+				writer.add_file(str(PATH), str(matches[1]), matches[0], ext=".pdf", license=licenses.CC_BY, copyright_holder="betterworlded")
+			except:
+				print ("Error in extracting link from: " + row[5])
+
+			count += 1
+
+	# TODO: Replace line with scraping code
+	# raise NotImplementedError("Scraping method not implemented")
 
 """ Helper Methods """
 ###########################################################
+
+def remove_forward_slashes(title):
+	ret = title
+	ret.replace("/","*")
+	return ret
 
 
 """ This code will run when the sous chef is called from the command line. """
