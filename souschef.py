@@ -75,6 +75,9 @@ def scrape_source(writer):
 	# the grade levels into a set
 	gradeLevels = set()
 	count = 0 # Temporary, to verify correct output
+	#docsRegex = re.search(r'https://docs\.google\.com/document/./([^/]*)', path)
+	googleDocCount = 0
+
 
 	with open(filename, 'r') as csvfile:
 		# Creating csv reader object
@@ -88,6 +91,7 @@ def scrape_source(writer):
 				continue
 			if count == 2: # Temporary, to ensure code works on the first 5 rows
 				break
+				continue
 
 			# Some folders are named as hyperlinks
 			gradeLevel = row[0]
@@ -124,25 +128,27 @@ def scrape_source(writer):
 				#title = remove_forward_slashes(matches[1])
 				title = matches[1].replace('/', '|')
 				print ("Adding written story: " + matches[1])
-
 				#writer.add_file(str(PATH), title, matches[0], ext=".pdf", license=licenses.CC_BY, copyright_holder="betterworlded")
-				writer.add_file(str(PATH), "title", "https://docs.google.com/document/d/1s-5q5TfAj_OeiQjHzDL0a90q0NO_gEq9eZnF8TkeLdU/edit?usp=sharing", ext=".pdf", license=licenses.CC_BY, copyright_holder="betterworlded")
+				writer.add_file(str(PATH), title, "https://docs.google.com/document/d/1s-5q5TfAj_OeiQjHzDL0a90q0NO_gEq9eZnF8TkeLdU/edit?usp=sharing", ext=".pdf", license=licenses.CC_BY, copyright_holder="betterworlded")
+				#else:
+				#	print ("Unable to extract pdf from Google Doc")
+				#	googleDocCount += 1
 			except Exception as e:
 				print ("Error in extracting link from: " + row[3], str(e))
 
+
 			# Video (4th column, zero indexed)
-			"""
 			try:
 				matches = re.findall(r'\"(.+?)\"', row[4])
-				#title = remove_forward_slashes(matches[1])
 				title = matches[1].replace('/', '|')
+				title = "I Am Shantanu // Chai & Community".replace('/', '|')
 				print ("Adding video: " + title)
 				print ("Video url: " + matches[0])
-				file_path = writer.add_file(str(PATH), str(matches[1]), matches[0], ext=".mp4", license=licenses.CC_BY, copyright_holder="betterworlded")
+				file_path = writer.add_file(str(PATH), title, matches[0], ext=".mp4", license=licenses.CC_BY, copyright_holder="betterworlded")
 
 			except:
 				print ("Error in extracting link from: " + row[4])
-			"""
+
 
 			# Lesson plan (5th column, zero indexed)
 			try:
@@ -150,7 +156,11 @@ def scrape_source(writer):
 				#title = remove_forward_slashes(matches[1])
 				title = matches[1].replace('/', '|')
 				print ("Adding lesson plan: " + matches[1])
+				#if not "docs.google.com" in matches[0]:
 				writer.add_file(str(PATH), str(matches[1]), matches[0], ext=".pdf", license=licenses.CC_BY, copyright_holder="betterworlded")
+				#else:
+				#	print ("Unable to extract pdf from Google Doc")
+				#	googleDocCount += 1
 			except:
 				print ("Error in extracting link from: " + row[5])
 
@@ -161,11 +171,6 @@ def scrape_source(writer):
 
 """ Helper Methods """
 ###########################################################
-
-def remove_forward_slashes(title):
-	ret = title
-	ret.replace("/","*")
-	return ret
 
 
 """ This code will run when the sous chef is called from the command line. """
