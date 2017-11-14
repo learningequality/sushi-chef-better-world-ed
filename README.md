@@ -255,7 +255,7 @@ _Please make sure your final chef matches the following standards._
 For Mac users
 1. Do not install requirements using 'pip', use 'pip3' instead.
   ex: 'pip3 install -r requirements.txt', because of the default version of python on macOS
-2. It may be necessary to install additional requirements using Homebrew package manager.
+2. It may be necessary to install additional requirements using the Homebrew package manager.
   ex: 'brew install youtube-dl'
 3. Use 'python3' when developing on macOS to run souschef.py
   ex: 'python3 souschef.py', for some reason on my machine it won't work with 'python souschef.py'
