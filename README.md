@@ -250,10 +250,12 @@ _Please make sure your final chef matches the following standards._
 1. Does the code use common python idioms where needed (with/open, try/except, etc.)?
 
 
-# Daniel's notes
+# Additional notes
 
 For Mac users
 1. Do not install requirements using 'pip', use 'pip3' instead.
-  ex: 'pip3 install -r requirements.txt', because of the default version of python on OS X
-2. Use 'python3' when developing on OS X to run souschef.py
+  ex: 'pip3 install -r requirements.txt', because of the default version of python on macOS
+2. It may be necessary to install additional requirements using Homebrew package manager.
+  ex: 'brew install youtube-dl'
+3. Use 'python3' when developing on macOS to run souschef.py
   ex: 'python3 souschef.py', for some reason on my machine it won't work with 'python souschef.py'

@@ -68,3 +68,9 @@ restore/*
 ghostdriver.log
 .webcache/*
 examples/*
+
+# Credentials
+.DS_Store
+client_secret.json
+client_secrets.json
+credentials/

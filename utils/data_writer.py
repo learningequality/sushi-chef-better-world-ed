@@ -173,5 +173,5 @@ class DataWriter():
         if download_url and filepath:
             self._write_to_zip(filepath, read(download_url))
             if write_data:
-                self._commit(filepath, title, license=license, **node_data)
+                self._commit(filepath, title, license=license, copyright_holder=copyright_holder, **node_data)
             return filepath
