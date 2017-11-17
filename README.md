@@ -18,6 +18,25 @@ found under `examples` directory.
 
 * Run `pip install -r requirements.txt`
 
+
+
+
+## Source Data Import
+
+Use the script `utils/gsheet2localcsv.py` to regenerate the file `bwe_overall_database.csv`
+with the latest data from the BWE sheet. To run this script, you'll need the credentials
+file `credentials/client_secret.json` (ask Ivan).
+
+1. Edit the values of `BWE_SHEET_NAME` and `BWE_RANDE` in `utils/gsheet2localcsv.py`
+   to reflect the current state (which sheet is source data on? / how many rows are there?)
+
+2. Run the script
+
+      python utils/gsheet2localcsv.py
+
+
+
+
 ## Description
 A sous chef is responsible for scraping content from a source and putting it into a folder
 and csv structure (see example `sushi-chef-better-world-ed/examples/Sample Channel.zip`)
@@ -250,9 +269,8 @@ _Please make sure your final chef matches the following standards._
 1. Does the code use common python idioms where needed (with/open, try/except, etc.)?
 
 
-# Additional notes
+# Notes for Mac OS users
 
-For Mac users
 1. Do not install requirements using 'pip', use 'pip3' instead.
   ex: 'pip3 install -r requirements.txt', because of the default version of python on macOS
 2. It may be necessary to install additional requirements using the Homebrew package manager.

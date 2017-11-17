@@ -1,3 +1,9 @@
+
+# BWE specific data files 
+bwe_overall_database.csv
+credentials/client_secret.json
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -9,6 +15,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 env/
+venv/
 build/
 develop-eggs/
 dist/
