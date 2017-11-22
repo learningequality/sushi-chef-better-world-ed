@@ -30,6 +30,10 @@ WRITE_TO_PATH = "{}{}{}.zip".format(os.path.dirname(os.path.realpath(__file__)),
 ###########################################################
 BASE_URL = 'https://www.betterworlded.org/try'
 
+""" Licenses and Copyrights """
+LICENSE=licenses.CC_BY
+COPYRIGHT_HOLDER="betterworlded"
+
 # Read csv file
 
 # csv file name
@@ -79,7 +83,7 @@ def scrape_source(writer):
 		Returns: None
     """
 
-	count = 0 # Temporary, to verify correct output
+	count = 0 # To verify correct output
 
 	with open(filename, 'r') as csvfile:
 		# Creating csv reader object
@@ -90,13 +94,14 @@ def scrape_source(writer):
 			if count == 0: # Skip the headers
 				count += 1
 				continue
-			if count == 2: # Temporary, to ensure code works on the first few rows
-				break
 
 			# Some folders are named as hyperlinks
 			gradeLevel = row[0]
 			if gradeLevel == "":
 				gradeLevel = "Other"
+
+			if count == 2:
+				break
 
 			# Setting the math topic and specific objective, as the database is
 			# zero indexed, row[1] will correspond to the current row, column 1,
@@ -131,7 +136,7 @@ def scrape_source(writer):
 				matches = re.findall(r'\"(.+?)\"', row[3])
 				title = matches[1].replace('/', '|')
 				print ("Adding written story: " + matches[1])
-				writer.add_file(str(PATH), title, matches[0], ext=".pdf", license=licenses.CC_BY, copyright_holder="betterworlded")
+				writer.add_file(str(PATH), title, matches[0], ext=".pdf", LICENSE, COPYRIGHT_HOLDER)
 			except Exception as e:
 				print ("Error in extracting written story link from: " + row[3], str(e))
 
@@ -141,7 +146,7 @@ def scrape_source(writer):
 				title = matches[1].replace('/', '|')
 				print ("Adding video: " + title)
 				print ("Video url: " + matches[0])
-				file_path = writer.add_file(str(PATH), title, matches[0], ext=".mp4", license=licenses.CC_BY, copyright_holder="betterworlded")
+				file_path = writer.add_file(str(PATH), title, matches[0], ext=".mp4", LICENSE, COPYRIGHT_HOLDER)
 			except:
 				print ("Error in extracting video link from: " + row[4])
 
@@ -150,7 +155,7 @@ def scrape_source(writer):
 				matches = re.findall(r'\"(.+?)\"', row[5])
 				title = matches[1].replace('/', '|')
 				print ("Adding lesson plan: " + matches[1])
-				writer.add_file(str(PATH), title, matches[0], ext=".pdf", license=licenses.CC_BY, copyright_holder="betterworlded")
+				writer.add_file(str(PATH), title, matches[0], ext=".pdf", LICENSE, COPYRIGHT_HOLDER)
 			except:
 				print ("Error in extracting lesson plan link from: " + row[5])
 
