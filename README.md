@@ -277,3 +277,6 @@ _Please make sure your final chef matches the following standards._
   ex: 'brew install youtube-dl'
 3. Use 'python3' when developing on macOS to run souschef.py
   ex: 'python3 souschef.py', for some reason on my machine it won't work with 'python souschef.py'
+4. There may be some trouble getting QuickTime Player to play the .mp4 files produced by the chef.
+   Switching to a different video player should remedy this, VLC should be able to view the files.
+  https://www.videolan.org/vlc/index.html
