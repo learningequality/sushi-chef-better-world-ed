@@ -81,6 +81,8 @@ def scrape_source(writer):
 		Returns: None
     """
 
+	count = 0
+
 	with open(filename, 'r') as csvfile:
 		# Creating csv reader object
 		csvreader = csv.reader(csvfile)
@@ -90,6 +92,8 @@ def scrape_source(writer):
 
 		# Extracting each data row one by one
 		for row in csvreader:
+			if count == 10:
+				break
 			# Some folders are named as hyperlinks
 			gradeLevel = row[0]
 			if gradeLevel == "":
@@ -150,6 +154,8 @@ def scrape_source(writer):
 				writer.add_file(str(PATH), title, matches[0], ext=".pdf", license=LICENSE, copyright_holder=COPYRIGHT_HOLDER)
 			except:
 				print ("Error in extracting lesson plan link from: " + row[5])
+
+			count += 1
 
 """ Helper Methods """
 ###########################################################
