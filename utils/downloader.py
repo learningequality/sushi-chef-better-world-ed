@@ -3,6 +3,8 @@ import time
 import youtube_dl
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 import re
 import tempfile
 import subprocess
@@ -22,8 +24,21 @@ DOWNLOAD_SESSION.mount('https://', forever_adapter)
 # PyDrive
 GAUTH = GoogleAuth()
 
+GAUTH.LoadCredentialsFile("mycreds.txt")
+if GAUTH.credentials is None:
+    # Authenticate if they're not there
+    GAUTH.LocalWebserverAuth()
+elif GAUTH.access_token_expired:
+    # Refresh them if expired
+    GAUTH.Refresh()
+else:
+    # Initialize the saved creds
+    GAUTH.Authorize()
+# Save the current credentials to a file
+GAUTH.SaveCredentialsFile("mycreds.txt")
+
 # Create local webserver which automatically handles authentication
-GAUTH.LocalWebserverAuth()
+GAUTH.CommandLineAuth()
 
 # Create Google Drive instance with authenticated GoogleAuth instance
 DRIVE = GoogleDrive(GAUTH)
