@@ -3,8 +3,6 @@ import time
 import youtube_dl
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 import re
 import tempfile
 import subprocess
