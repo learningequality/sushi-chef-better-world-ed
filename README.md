@@ -269,5 +269,14 @@ _Please make sure your final chef matches the following standards._
 1. Does the code use common python idioms where needed (with/open, try/except, etc.)?
 
 
+# Notes for Mac OS users
 
-
+1. Do not install requirements using 'pip', use 'pip3' instead.
+  ex: 'pip3 install -r requirements.txt', because of the default version of python on macOS
+2. It may be necessary to install additional requirements using the Homebrew package manager.
+  ex: 'brew install youtube-dl'
+3. Use 'python3' when developing on macOS to run souschef.py
+  ex: 'python3 souschef.py', for some reason on my machine it won't work with 'python souschef.py'
+4. There may be some trouble getting QuickTime Player to play the .mp4 files produced by the chef.
+   Switching to a different video player should remedy this, VLC should be able to view the files.
+  https://www.videolan.org/vlc/index.html

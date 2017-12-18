@@ -167,10 +167,11 @@ class DataWriter():
         assert not write_data or license in NO_COPYRIGHT_HOLDER_REQUIRED or copyright_holder, "Licenses must have a copyright holder if they are not public domain"
 
         self._parse_path(path)
-        _name, ext = ext or os.path.splitext(download_url or "")
+        if not ext:
+            _name, ext = ext or os.path.splitext(download_url or "")
         filepath = "{}/{}{}".format(path, title, ext)
         if download_url and filepath:
             self._write_to_zip(filepath, read(download_url))
             if write_data:
-                self._commit(filepath, title, license=license, **node_data)
+                self._commit(filepath, title, license=license, copyright_holder=copyright_holder, **node_data)
             return filepath
