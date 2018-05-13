@@ -44,11 +44,11 @@ This sushi-chef requires following components:
 ##### Running the Chef
 In `sushi-chef-better-world-ed` directory, run the following command to run the script with token from previous step:
 ```
-$ ./sushichef.py -v --token=<AUTHORIZATION TOKEN>
+$ ./sushichef.py -v --token=<AUTHORIZATION TOKEN> --compress
 
 ```
 
 Example
 ```
-$ ./sushichef.py -v --token=123456abcdefb4c9404451768a3924eb71123456
+$ ./sushichef.py -v --token=123456abcdefb4c9404451768a3924eb71123456 --compress
 ```
