@@ -151,14 +151,26 @@ def download_document(link):
     Downloads pdf from the link
     and returns document node
     """
+
+    # Return if link does not contain hyperlink information
     if "=HYPERLINK" not in link:
         return link
+
+    # For example, if the link is - HYPERLINK("https://drive.google.com/open?id=0B9q-Bz2y-5bySDBvYmh1N0abcde","Test Document")
+    # this method extracts document_link and document_title
+    # https://drive.google.com/open?id=0B9q-Bz2y-5bySDBvYmh1N0abcde as document_link
+    # Test Document as document_title
     splits = link.split("\",\"")
     document_title = re.search('(.*)\"\)', splits[1]).group(1)
     document_link = splits[0].split("=HYPERLINK(\"")[1]
+
+    # Use GoogleAuth to download documents from links - e.g. googleDocs, googleDrive.
     gauth = GoogleAuth()
     gauth.LocalWebserverAuth()
     drive = GoogleDrive(gauth)
+
+    # Depends on the link type, grep the id(0B9q-Bz2y-5bySDBvYmh1N0abcde) part from document,
+    # and download the pdf from the link for creating DocumentNodes
     if document_link.startswith("https://www.google.com/url?q=https"):
         info = document_link.split("/")[8]
         result = create_pdf(drive, info)
@@ -199,10 +211,13 @@ def download_document(link):
     else:
         return None
 
+    # Creating DocumentNode with downloaded information
     LOGGER.info("\tCreating a pdf node - {}".format(document_title))
     pdf_path = "{}/{}.pdf".format(DOWNLOAD_DIRECTORY, info)
     pdf_file = files.DocumentFile(pdf_path)
     unique_id = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(5))
+
+    # Adding unique_id to eliminate possible conflicts with nodes with same source_id.
     pdf_source_id = "{}-{}".format(unique_id, info)
     pdf_node = nodes.DocumentNode(
         source_id=pdf_source_id,
