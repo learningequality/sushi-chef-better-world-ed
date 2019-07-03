@@ -1,7 +1,11 @@
 
+.ipynb_checkpoints
+
+
 # BWE specific data files
-bwe_overall_database.csv
+chefdata/Better_World_Ed_Content_shared_for_Kolibri.csv
 credentials/client_secret.json
+bwe_overall_database.csv
 
 
 # Byte-compiled / optimized / DLL files
