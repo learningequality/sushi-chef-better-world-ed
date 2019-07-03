@@ -1,17 +1,23 @@
 #!/usr/bin/env python
+import io
 import os
+import pandas as pd
 import random
 import re
 import string
 import youtube_dl
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
+from googleapiclient.http import MediaIoBaseDownload
+
+from le_utils.constants import licenses, languages
 from ricecooker.chefs import SushiChef
-from ricecooker.classes import nodes, files, licenses
+from ricecooker.classes import nodes, files
+from ricecooker.classes.licenses import get_license
 from ricecooker.config import LOGGER
 from ricecooker.exceptions import raise_for_invalid_channel
-from le_utils.constants import licenses, languages
-import pandas as pd
+
+from extract import get_service
+
+
 
 CHANNEL_NAME = "Better World Ed"              # Name of channel
 CHANNEL_SOURCE_ID = "sushi-chef-better-world-ed"    # Channel's unique id
@@ -23,22 +29,30 @@ CHANNEL_DESCRIPTION = "K-12 curriculum aligned to various sets "\
                       "science. Videos, stories, and lesson plans to help "\
                       "teach empathy in the context of the regular math and "\
                       "literacy curriculum."
-CHANNEL_THUMBNAIL = "thumbnail.jpg"
+CHANNEL_THUMBNAIL = "chefdata/channel_thumbnail.jpg"
 
-COL = ["Grade Level Range", "Math Topic", "Specific Objective",
-       "Written Story", "Video", "Lesson Plan", "BWE Topic"]
+
+
+BWE_CSV_SAVE_DIR = 'chefdata'
+BWE_CSV_SAVE_FILENAME = 'Better_World_Ed_Content_shared_for_Kolibri.csv'
+# COL = ["Grade Level Range", "Math Topic", "Specific Objective",
+#        "Written Story", "Video", "Lesson Plan", "BWE Topic"]
+
+COL = ["Video", "Written Story", "Lesson Plan"]
 GRADE_DICT = {}
 DOWNLOAD_DIRECTORY = os.path.join(os.path.dirname(os.path.realpath(__file__)), "downloads")
-CHANNEL_LICENSE = licenses.PUBLIC_DOMAIN
+CHANNEL_LICENSE = get_license(licenses.SPECIAL_PERMISSIONS, copyright_holder='Better World Ed', description='Sharing of select materials on Kolibri')
+
 
 
 # Create download directory if it doesn't already exist
 if not os.path.exists(DOWNLOAD_DIRECTORY):
     os.makedirs(DOWNLOAD_DIRECTORY)
 
+
 # The chef subclass
 ################################################################################
-class MyChef(SushiChef):
+class BetterWorldEdChef(SushiChef):
     """
     This class uploads the Better World Ed channel to Kolibri Studio.
     """
@@ -135,14 +149,19 @@ def download_video(link):
     video_title = video["title"].capitalize()
     video_source_id = video_title.strip().replace(" ", "_")
     video_path = "{}/{}.mp4".format(DOWNLOAD_DIRECTORY, video_id)
-    video_file = files.VideoFile(path=video_path, language=languages.getlang('en').code)
+    video_file = files.VideoFile(
+        path=video_path,
+        language=languages.getlang('en').code,
+        ffmpeg_settings={'crf': 30},
+    )
     unique_id = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(5))
     LOGGER.info("\tCreating a video node - {}".format(video_title))
     video_node = nodes.VideoNode(
         source_id="{}-video-{}".format(video_source_id, unique_id),
         title=video_title,
         files=[video_file],
-        license=CHANNEL_LICENSE
+        license=CHANNEL_LICENSE,
+        derive_thumbnail=True,
     )
     return video_node
 
@@ -165,9 +184,7 @@ def download_document(link):
     document_link = splits[0].split("=HYPERLINK(\"")[1]
 
     # Use GoogleAuth to download documents from links - e.g. googleDocs, googleDrive.
-    gauth = GoogleAuth()
-    gauth.LocalWebserverAuth()
-    drive = GoogleDrive(gauth)
+    drive = get_service(service_name='drive', service_version='v3')
 
     # Depends on the link type, grep the id(0B9q-Bz2y-5bySDBvYmh1N0abcde) part from document,
     # and download the pdf from the link for creating DocumentNodes
@@ -177,37 +194,38 @@ def download_document(link):
         if not result:
             return None
     elif "docs.google.com" in document_link:
-        if "a/reweave.org" in document_link:
-            info = document_link.split("/")[7]
-            result = create_pdf(drive, info)
-            if not result:
-                return None
-        elif "document/d" in document_link:
+        # if "a/reweave.org" in document_link:
+        #     info = document_link.split("/")[7]
+        #     result = create_pdf(drive, info, method='export')
+        #     if not result:
+        #         return None
+        if "document/d" in document_link:
             info = document_link.split("/")[5]
-            result = create_pdf(drive, info)
+            result = create_pdf(drive, info, method='export')
             if not result:
                 return None
     elif "drive.google.com" in document_link:
         if "open?id=" in document_link:
+            # print(document_link)
             info = document_link.split("open?id=")[1]
-            result = create_pdf(drive, info)
+            result = create_pdf(drive, info, method='download')
             if not result:
                 return None
-        elif "reweave.org/file/d" in document_link:
-            info = document_link.split("/")[7]
-            result = create_pdf(drive, info)
-            if not result:
-                return None
+        # elif "reweave.org/file/d" in document_link:
+        #     info = document_link.split("/")[7]
+        #     result = create_pdf(drive, info, method='download')
+        #     if not result:
+        #         return None
         elif "file/d/" in document_link:
             info = document_link.split("/")[5]
-            result = create_pdf(drive, info)
+            result = create_pdf(drive, info, method='download')
             if not result:
                 return None
-        elif "file/u/1/d" in document_link:
-            info = document_link.split("/")[7]
-            result = create_pdf(drive, info)
-            if not result:
-                return None
+        # elif "file/u/1/d" in document_link:
+        #     info = document_link.split("/")[7]
+        #     result = create_pdf(drive, info)
+        #     if not result:
+        #         return None
     else:
         return None
 
@@ -227,18 +245,34 @@ def download_document(link):
     )
     return pdf_node
 
-def create_pdf(drive, info):
+def create_pdf(drive, info, method):
     """
     Creates pdf in local directory.
     Skips if file already exists
     """
-    if not os.path.exists('./downloads/{}.pdf'.format(info)):
-        file_obj = drive.CreateFile({'id': info})
+    assert method in ['download', 'export']
+    # print('in create_pdf; info=', info)
+    dest_path = './downloads/{}.pdf'.format(info)
+    if not os.path.exists(dest_path):
+        if method == 'download':
+            # Google drive link
+            request = drive.files().get_media(fileId=info)
+        elif method == 'export':
+            # Google docs link
+            request = drive.files().export(fileId=info, mimeType='application/pdf')
+        else:
+            raise ValueError('unknown method', method)
         try:
             LOGGER.info("\tDownloading pdf file - {}.pdf".format(info))
-            file_obj.GetContentFile('./downloads/{}.pdf'.format(info), mimetype="application/pdf")
-        except:
-            LOGGER.info("\tThere was an error while downloding {}".format(info))
+            fh = io.FileIO(dest_path, mode='wb')
+            downloader = MediaIoBaseDownload(fh, request)
+            done = False
+            while not done:
+                status, done = downloader.next_chunk()
+                print("Downloading %d%%." % int(status.progress() * 100))
+        except Exception as e:
+            LOGGER.info("\n\n\tThere was an error while downloding {}".format(info))
+            print(e)
             return None
     return info
 
@@ -248,16 +282,27 @@ def scrape_spreadsheet():
     Sort them by grade to put `Others` in the last
     Scrape each row and structure a dictionary(GRADE_DICT) to represent the tree
     """
-    content = pd.read_csv("bwe_overall_database.csv", usecols=COL, names=COL)
-    sorted_by_grade = content.sort_values(by="Grade Level Range", na_position="last")
+    content = pd.read_csv(os.path.join(BWE_CSV_SAVE_DIR,BWE_CSV_SAVE_FILENAME), usecols=COL, names=COL)
+    # sorted_by_grade = content.sort_values(by="Grade Level Range", na_position="last")
+    sorted_by_grade = content.sort_values(by="Video", na_position="last")
 
-    for _, row in sorted_by_grade.iterrows():
-        grade = "Other" if pd.isnull(row[0]) else row[0].strip()
-        math_topic = get_info(row[1])
-        specific_obj = get_info(row[2])
-        written_story = download_document(row[3])
-        video_node = download_video(row[4])
-        lesson_plan = download_document(row[5])
+    for i, tup in enumerate(sorted_by_grade.iterrows()):
+        _, row = tup
+
+        # TMP HACKS since structure info is not available in current sheet
+        grade = "Grade" #  if pd.isnull(row[0]) else row[0].strip()
+        math_topic = 'Topic' # get_info(row[1])
+        specific_obj = 'Learning objective ' + str(i+1) # get_info(row[2])
+        # /TMP HACKS
+
+        video_node = download_video(row[0])
+        written_story = download_document(row[1])
+        if written_story is None:
+            print('failed to download written_story', row[1])
+        lesson_plan = download_document(row[2])
+        if lesson_plan is None:
+            print('failed to download lesson_plan', row[2])
+        
         group = [written_story, video_node, lesson_plan]
 
         if grade not in GRADE_DICT:
@@ -271,9 +316,11 @@ def scrape_spreadsheet():
                 else:
                     GRADE_DICT[grade][math_topic][specific_obj].append(group)
 
+
+
 # CLI
 ################################################################################
+
 if __name__ == '__main__':
-    # This code runs when sushichef.py is called from the command line
-    chef = MyChef()
+    chef = BetterWorldEdChef()
     chef.main()
