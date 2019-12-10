@@ -3,8 +3,12 @@ ricecooker>=0.6.31
 pandas>=0.22.0
 youtube_dl>=2019.7.2
 
+# for getting files from Google Drive
 google-api-python-client>=1.7.9
 google-auth-oauthlib>=0.4.0
 oauthlib>=3.0.1
 requests-oauthlib>=1.2.0
+
+# for getting metadata from Vimeo API
+PyVimeo==1.0.11
 

@@ -40,6 +40,9 @@ This sushi chef requires following components:
   - `credentials/client_secret.json`: Google API client information for OAuth
   - `credentials/vimeo_api_client.json`: Vimeo API client info
 
+These files must be obtained separately from the git repo. Ask in the #suchi-chefs channel on slack.
+
+
 
 ## Running
 
@@ -60,4 +63,22 @@ This will produce the CSV file `chefdata/Better_World_Ed_Content_shared_for_Koli
 In `sushi-chef-better-world-ed` directory, run the following command to run the script with token from previous step:
 ```bash
 ./sushichef.py  -v --reset --thumbnails  --token=STUDIOTOKENGOESHERE --stage
+```
+
+
+
+
+
+## Special install instructions
+
+If you get the error `ImportError: pycurl: libcurl link-time ssl backend (openssl) is different from compile-time ssl backend (none/other)`
+when running on Mac, you can workaround using
+
+
+```bash
+brew install curl-openssl
+set -x PYCURL_CURL_CONFIG "/usr/local/opt/curl-openssl/bin/curl-config"
+set -x LDFLAGS '-L/usr/local/opt/openssl/lib -L/usr/local/opt/c-ares/lib -L/usr/local/opt/nghttp2/lib -L/usr/local/opt/libmetalink/lib -L/usr/local/opt/rtmpdump/lib -L/usr/local/opt/libssh2/lib -L/usr/local/opt/openldap/lib -L/usr/local/opt/brotli/lib'
+set -x CPPFLAGS "-I/usr/local/opt/openssl/include"
+pip install pycurl --compile --no-cache-dir
 ```
