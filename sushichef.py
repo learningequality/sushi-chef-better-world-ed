@@ -1,12 +1,12 @@
 #!/usr/bin/env python
+from googleapiclient.http import MediaIoBaseDownload
 import io
+import json
 import os
 import pandas as pd
-import random
 import re
-import string
+import vimeo
 import youtube_dl
-from googleapiclient.http import MediaIoBaseDownload
 
 from le_utils.constants import licenses, languages
 from ricecooker.chefs import SushiChef
@@ -19,10 +19,10 @@ from extract import get_service
 
 
 
-CHANNEL_NAME = "Better World Ed"              # Name of channel
+CHANNEL_NAME = "Better World Ed"                    # Name of channel
 CHANNEL_SOURCE_ID = "sushi-chef-better-world-ed"    # Channel's unique id
-CHANNEL_DOMAIN = "https://www.betterworlded.org"          # Who is providing the content
-CHANNEL_LANGUAGE = "en"      # Language of channel
+CHANNEL_DOMAIN = "https://www.betterworlded.org"    # Who is providing the content
+CHANNEL_LANGUAGE = "en"                             # Language of channel
 CHANNEL_DESCRIPTION = "K-12 curriculum aligned to various sets "\
                       "of standards designed to promote “STEMpathy,” "\
                       "a human-centered approach to teaching math and "\
@@ -43,7 +43,7 @@ BWE_CSV_SAVE_FILENAME = 'Better_World_Ed_Content_shared_for_Kolibri.csv'
 
 VIDEO_KEY = "Video"
 WRITTEN_STORY_KEY = "Written Story"
-LESSON_PLAN_KEY = "Lesson Plan" 
+LESSON_PLAN_KEY = "Lesson Plan"
 MATH_GRADE_LEVEL_KEY = "Math Grade Level"
 MATH_TOPIC_KEY = "Math Topic"
 SPECIFIC_MATH_OBJECTIVE_KEY = "Specific Math Objective"
@@ -69,6 +69,15 @@ DOWNLOAD_DIRECTORY = os.path.join(os.path.dirname(os.path.realpath(__file__)), "
 # Create download directory if it doesn't already exist
 if not os.path.exists(DOWNLOAD_DIRECTORY):
     os.makedirs(DOWNLOAD_DIRECTORY)
+
+# vimeo API
+VIMEO_CLIENT_SECRET_FILE = 'credentials/vimeo_api_client.json'
+vimeo_creds = json.load(open(VIMEO_CLIENT_SECRET_FILE))
+vimeo_client = vimeo.VimeoClient(
+    token=vimeo_creds['access_token'],
+    key=vimeo_creds['client_identifier'],
+    secret=vimeo_creds['client_secret']
+)
 
 
 # The chef subclass
@@ -100,6 +109,8 @@ class BetterWorldEdChef(SushiChef):
         """
         channel = self.get_channel(*args, **kwargs)
         scrape_spreadsheet()
+        import pprint
+        pprint.pprint(GRADE_DICT)
         for grade in GRADE_DICT:
             source_id = grade.strip().replace(" ", "_")
             LOGGER.info("\tCreating a topic node - {}".format(grade))
@@ -121,10 +132,8 @@ def get_nodes_from_dict(parent, dictionary, prefix):
             get_nodes_from_dict(topic_node, dictionary[topic], topic_source_id)
             parent.add_child(topic_node)
         else:
-            for node in topic:
-                if node and not isinstance(node, str):
-                    LOGGER.info("\tAdding a child node - {}".format(node))
-                    parent.add_child(node)
+            LOGGER.info("\tAdding a child node - {}".format(topic))
+            parent.add_child(topic)
 
 
 def get_info(information):
@@ -151,7 +160,9 @@ def download_video(link):
     video_id = video_link.split("/")[-1]
     ydl = youtube_dl.YoutubeDL({
         'outtmpl': './downloads/%(id)s.%(ext)s',
-        'writeautomaticsub': True
+        'writeautomaticsub': True,
+        'quiet': True,
+        'no_warnings': True,
     })
 
     with ydl:
@@ -167,33 +178,50 @@ def download_video(link):
         video = result
 
     video_title = video["title"].capitalize()
-    video_source_id = video_title.strip().replace(" ", "_")
     video_path = "{}/{}.mp4".format(DOWNLOAD_DIRECTORY, video_id)
     video_file = files.VideoFile(
         path=video_path,
         language=languages.getlang('en').code,
-        ffmpeg_settings={'crf': 30},
+        ffmpeg_settings={'crf': 30},  # TODO: change to 26 (70% more file size but better quality)
     )
-    unique_id = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(5))
     LOGGER.info("\tCreating a video node - {}".format(video_title))
     video_node = nodes.VideoNode(
-        source_id="{}-video-{}".format(video_source_id, unique_id),
+        source_id=video_id,
         title=video_title,
-        files=[video_file],
+        author=get_video_credits_str(video_id),
         license=CHANNEL_LICENSE,
         derive_thumbnail=True,
+        # TODO: generate description from country or other metadata -- vimeo description not super good
+        files=[video_file],
     )
     return video_node
 
+def get_video_credits_str(video_id):
+    api_endpoint = '/videos/{video_id}/credits'.format(video_id=video_id)
+    resp = vimeo_client.get(api_endpoint)
+    credits = resp.json()['data']
+
+    # format as comma-separated list of   Name (role), Name 2 (role2), etc.
+    credit_strs = []
+    for credit in credits:
+        credit_str = credit['name']
+        role = credit.get('role', None)
+        if role:
+            credit_str +=  ' (' + role.lower() + ')'
+        credit_strs.append(credit_str)
+
+    credits_str = ', '.join(credit_strs)
+    return credits_str
+
+
+
 def download_document(link):
     """
-    Downloads pdf from the link
-    and returns document node
+    Downloads pdf from the link and returns document node.
     """
-
     # Return if link does not contain hyperlink information
     if "=HYPERLINK" not in link:
-        return link
+        return None
 
     # For example, if the link is - HYPERLINK("https://drive.google.com/open?id=0B9q-Bz2y-5bySDBvYmh1N0abcde","Test Document")
     # this method extracts document_link and document_title
@@ -253,10 +281,7 @@ def download_document(link):
     LOGGER.info("\tCreating a pdf node - {}".format(document_title))
     pdf_path = "{}/{}.pdf".format(DOWNLOAD_DIRECTORY, info)
     pdf_file = files.DocumentFile(pdf_path)
-    unique_id = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(5))
-
-    # Adding unique_id to eliminate possible conflicts with nodes with same source_id.
-    pdf_source_id = "{}-{}".format(unique_id, info)
+    pdf_source_id = info
     pdf_node = nodes.DocumentNode(
         source_id=pdf_source_id,
         title=document_title.capitalize(),
@@ -313,7 +338,7 @@ def scrape_spreadsheet():
     # TODO: make K-2nd grade level first instead of last
 
     for i, tup in enumerate(sorted_by_grade.iterrows()):
-        print('processing', tup)
+        # print('processing', tup)
         _, row = tup
 
         # L1 of tree hierarchy
@@ -331,6 +356,7 @@ def scrape_spreadsheet():
         math_objectives_list = math_objectives_str.split(',')
         specific_obj = math_objectives_list[0].strip()  # choose first math specific math objective  TODO: revisit this
 
+        # group = video + story + lesson plan ---> pacakge into a lesson_topic
         video_node = download_video(row[VIDEO_KEY])
         written_story = download_document(row[WRITTEN_STORY_KEY])
         if written_story is None:
@@ -338,19 +364,27 @@ def scrape_spreadsheet():
         lesson_plan = download_document(row[LESSON_PLAN_KEY])
         if lesson_plan is None:
             print('failed to download lesson_plan', row[LESSON_PLAN_KEY])
-
         group = [written_story, video_node, lesson_plan]
+        lesson_topic = nodes.TopicNode(
+            source_id=written_story.title,
+            title=written_story.title,
+        )
+        for group_node in group:
+            if group_node:
+                lesson_topic.add_child(group_node)
+            else:
+                print('Found None', group_node, 'in lesson', written_story.title)
 
         if grade not in GRADE_DICT:
-            GRADE_DICT[grade] = {math_topic: {specific_obj: [group]}}
+            GRADE_DICT[grade] = {math_topic: {specific_obj: [lesson_topic]}}
         else:
             if math_topic not in GRADE_DICT[grade]:
-                GRADE_DICT[grade][math_topic] = {specific_obj: [group]}
+                GRADE_DICT[grade][math_topic] = {specific_obj: [lesson_topic]}
             else:
                 if specific_obj not in GRADE_DICT[grade][math_topic]:
-                    GRADE_DICT[grade][math_topic][specific_obj] = [group]
+                    GRADE_DICT[grade][math_topic][specific_obj] = [lesson_topic]
                 else:
-                    GRADE_DICT[grade][math_topic][specific_obj].append(group)
+                    GRADE_DICT[grade][math_topic][specific_obj].append(lesson_topic)
 
 
 

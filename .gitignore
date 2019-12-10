@@ -1,6 +1,8 @@
 
 .ipynb_checkpoints
 
+oldvenv
+
 
 # BWE specific data files
 chefdata/Better_World_Ed_Content_shared_for_Kolibri.csv
