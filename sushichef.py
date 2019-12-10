@@ -30,21 +30,42 @@ CHANNEL_DESCRIPTION = "K-12 curriculum aligned to various sets "\
                       "teach empathy in the context of the regular math and "\
                       "literacy curriculum."
 CHANNEL_THUMBNAIL = "chefdata/channel_thumbnail.jpg"
-
+CHANNEL_LICENSE = get_license(
+    licenses.SPECIAL_PERMISSIONS,
+    copyright_holder='Better World Ed',
+    description='Sharing of select materials on Kolibri'
+)
 
 
 BWE_CSV_SAVE_DIR = 'chefdata'
 BWE_CSV_SAVE_FILENAME = 'Better_World_Ed_Content_shared_for_Kolibri.csv'
-# COL = ["Grade Level Range", "Math Topic", "Specific Objective",
-#        "Written Story", "Video", "Lesson Plan", "BWE Topic"]
 
-COL = ["Video", "Written Story", "Lesson Plan"]
+
+VIDEO_KEY = "Video"
+WRITTEN_STORY_KEY = "Written Story"
+LESSON_PLAN_KEY = "Lesson Plan" 
+MATH_GRADE_LEVEL_KEY = "Math Grade Level"
+MATH_TOPIC_KEY = "Math Topic"
+SPECIFIC_MATH_OBJECTIVE_KEY = "Specific Math Objective"
+CSV_HEADER = [
+    VIDEO_KEY,
+    WRITTEN_STORY_KEY,
+    LESSON_PLAN_KEY,
+    MATH_GRADE_LEVEL_KEY,
+    MATH_TOPIC_KEY,
+    SPECIFIC_MATH_OBJECTIVE_KEY,
+    "Global Topic",
+    "Social Studies Topic",
+    "Country",
+    "SEL Topic",
+    "Literacy Topic",
+]
+
 GRADE_DICT = {}
+DEFAULT_GRADE_LEVEL = '4th-6th'
+
+
 DOWNLOAD_DIRECTORY = os.path.join(os.path.dirname(os.path.realpath(__file__)), "downloads")
-CHANNEL_LICENSE = get_license(licenses.SPECIAL_PERMISSIONS, copyright_holder='Better World Ed', description='Sharing of select materials on Kolibri')
-
-
-
 # Create download directory if it doesn't already exist
 if not os.path.exists(DOWNLOAD_DIRECTORY):
     os.makedirs(DOWNLOAD_DIRECTORY)
@@ -121,8 +142,7 @@ def get_info(information):
 
 def download_video(link):
     """
-    downloads video from the link
-    and returns video node
+    Downloads video from the link and returns video node.
     """
     if "=HYPERLINK" not in link:
         return link
@@ -282,27 +302,43 @@ def scrape_spreadsheet():
     Sort them by grade to put `Others` in the last
     Scrape each row and structure a dictionary(GRADE_DICT) to represent the tree
     """
-    content = pd.read_csv(os.path.join(BWE_CSV_SAVE_DIR,BWE_CSV_SAVE_FILENAME), usecols=COL, names=COL)
-    # sorted_by_grade = content.sort_values(by="Grade Level Range", na_position="last")
-    sorted_by_grade = content.sort_values(by="Video", na_position="last")
+    content = pd.read_csv(
+        os.path.join(BWE_CSV_SAVE_DIR, BWE_CSV_SAVE_FILENAME),
+        skiprows=1,  # skip the first row which contains the CSV_HEADER
+        usecols=CSV_HEADER,
+        names=CSV_HEADER,
+        dtype={MATH_GRADE_LEVEL_KEY: str},
+    )
+    sorted_by_grade = content.sort_values(by=MATH_GRADE_LEVEL_KEY, na_position="last")
+    # TODO: make K-2nd grade level first instead of last
 
     for i, tup in enumerate(sorted_by_grade.iterrows()):
+        print('processing', tup)
         _, row = tup
 
-        # TMP HACKS since structure info is not available in current sheet
-        grade = "Grade" #  if pd.isnull(row[0]) else row[0].strip()
-        math_topic = 'Topic' # get_info(row[1])
-        specific_obj = 'Learning objective ' + str(i+1) # get_info(row[2])
-        # /TMP HACKS
+        # L1 of tree hierarchy
+        grade = DEFAULT_GRADE_LEVEL if pd.isnull(row[MATH_GRADE_LEVEL_KEY]) else row[MATH_GRADE_LEVEL_KEY].strip()
+        if grade == '3rd - 5th':
+            grade = '3rd-5th'
 
-        video_node = download_video(row[0])
-        written_story = download_document(row[1])
+        # L2 of tree hierarchy
+        math_topics_str = get_info(row[MATH_TOPIC_KEY])
+        math_topics_list = math_topics_str.split(',')
+        math_topic = math_topics_list[0].strip()  # choose first math topic to make hierarchy  TODO: revisit this
+
+        # L3 of tree hierarchy
+        math_objectives_str = row[SPECIFIC_MATH_OBJECTIVE_KEY]
+        math_objectives_list = math_objectives_str.split(',')
+        specific_obj = math_objectives_list[0].strip()  # choose first math specific math objective  TODO: revisit this
+
+        video_node = download_video(row[VIDEO_KEY])
+        written_story = download_document(row[WRITTEN_STORY_KEY])
         if written_story is None:
-            print('failed to download written_story', row[1])
-        lesson_plan = download_document(row[2])
+            print('failed to download written_story', row[WRITTEN_STORY_KEY])
+        lesson_plan = download_document(row[LESSON_PLAN_KEY])
         if lesson_plan is None:
-            print('failed to download lesson_plan', row[2])
-        
+            print('failed to download lesson_plan', row[LESSON_PLAN_KEY])
+
         group = [written_story, video_node, lesson_plan]
 
         if grade not in GRADE_DICT:

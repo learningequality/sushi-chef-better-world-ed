@@ -36,19 +36,28 @@ In order to run the script, you need an authorization token. To get one,
 
 
 ## Requirements
-This sushi-chef requires following components:
-- `settings.yaml` : This file contains configuration that enables Pydrive authentication process achieve Google Drive Api executions. Developer needs to update `settings.yaml` with user's credentials. Please refer to [this document](https://pythonhosted.org/PyDrive/oauth.html) to update `settings.yaml` file.
-- `credentials.json` : This file contains Google Drive API information.
-- `bwe_overall_database.csv` : csv file that contains contents from `better-world-ed` spreadsheet. Please locate the `bwe_overall_database.csv` file at the root of this repository.
+This sushi chef requires following components:
+  - `credentials/client_secret.json`: Google API client information for OAuth
+  - `credentials/vimeo_api_client.json`: Vimeo API client info
 
-##### Running the Chef
+
+## Running
+
+### Step 1: extract data
+
+First run the extract script
+```bash
+./extract.py
+```
+
+This will produce the CSV file `chefdata/Better_World_Ed_Content_shared_for_Kolibri.csv`
+
+
+
+
+## Step 2: Running the Chef
+
 In `sushi-chef-better-world-ed` directory, run the following command to run the script with token from previous step:
-```
-$ ./sushichef.py -v --token=<AUTHORIZATION TOKEN> --compress
-
-```
-
-Example
-```
-$ ./sushichef.py -v --token=123456abcdefb4c9404451768a3924eb71123456 --compress
+```bash
+./sushichef.py  -v --reset --thumbnails  --token=STUDIOTOKENGOESHERE --stage
 ```
