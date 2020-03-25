@@ -19,16 +19,15 @@ from extract import get_service
 
 
 
-CHANNEL_NAME = "Better World Ed"                    # Name of channel
+CHANNEL_NAME = "BetterWorldEd.org"                  # Name of channel
 CHANNEL_SOURCE_ID = "sushi-chef-better-world-ed"    # Channel's unique id
 CHANNEL_DOMAIN = "https://www.betterworlded.org"    # Who is providing the content
 CHANNEL_LANGUAGE = "en"                             # Language of channel
-CHANNEL_DESCRIPTION = "K-12 curriculum aligned to various sets "\
-                      "of standards designed to promote “STEMpathy,” "\
-                      "a human-centered approach to teaching math and "\
-                      "science. Videos, stories, and lesson plans to help "\
-                      "teach empathy in the context of the regular math and "\
-                      "literacy curriculum."
+CHANNEL_DESCRIPTION = "K-12 curriculum aligned to various sets of standards "\
+                      "designed to promote Social Emotional Learning that's Global. "\
+                      "Better World Ed creates Learning Journeys: videos, "\
+                      "written stories, and lesson plans to teach empathy and "\
+                      "global understanding in the context of academic subject matter."
 CHANNEL_THUMBNAIL = "chefdata/channel_thumbnail.jpg"
 CHANNEL_LICENSE = get_license(
     licenses.SPECIAL_PERMISSIONS,
